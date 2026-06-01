@@ -1,20 +1,25 @@
 ---
-Title: RAG 从零开始：概念、原理与实现
 Company:
   name: BOEING
   logo: ./assets/boeing-logo.png
 Document:
+  Title: RAG 从零开始：概念、原理与实现
+  Font:
+    48: "#982828"
+    36: "#005566"
+    24: "#6d6d7d"
+    16: "#9119ba"
   docCode: DOC0227703
   docRev: 1.0
   First Made Date: 5/22/2024
   First Made By (Author): 二大爷
-  output: pptx
+output: pptx
 ---
 
-#
+# RAG 从零开始：概念、原理与实现
 
 ![First](./assets/bg1.jpg){traansparency:50,size:100*400,}
-![last](./assets/bg2.jpg){}
+![last](./assets/bg2.jpg){traansparency:50,size:1600*900,}
 
 ## RAG 是什么
 

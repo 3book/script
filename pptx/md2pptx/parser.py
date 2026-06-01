@@ -10,6 +10,39 @@ from models import MetaInfo, Section, SubSection, Block, ImageAttr
 from image_processor import parse_image_attributes, make_image_attr
 
 
+def _normalize_yaml_indent(yaml_str: str) -> str:
+    """Normalize inconsistent indentation in YAML frontmatter.
+
+    Strips leading whitespace from the first non-empty line and adjusts
+    all lines by the same amount so YAML parses correctly.
+    """
+    lines = yaml_str.split("\n")
+    if not lines:
+        return yaml_str
+
+    # Find minimum indentation among non-empty, non-comment lines
+    min_indent = None
+    for line in lines:
+        stripped = line.lstrip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        indent = len(line) - len(stripped)
+        if min_indent is None or indent < min_indent:
+            min_indent = indent
+
+    if min_indent is None or min_indent == 0:
+        return yaml_str
+
+    # Remove the common leading whitespace
+    normalized = []
+    for line in lines:
+        if line.strip():
+            normalized.append(line[min_indent:])
+        else:
+            normalized.append(line)
+    return "\n".join(normalized)
+
+
 def parse_yaml_frontmatter(text: str) -> Tuple[MetaInfo, str]:
     """Extract YAML frontmatter from markdown text.
 
@@ -35,6 +68,9 @@ def parse_yaml_frontmatter(text: str) -> Tuple[MetaInfo, str]:
 
     if not yaml_str:
         return meta, body
+
+    # Normalize inconsistent indentation in YAML frontmatter
+    yaml_str = _normalize_yaml_indent(yaml_str)
 
     try:
         data = yaml.safe_load(yaml_str)
@@ -77,7 +113,10 @@ def parse_yaml_frontmatter(text: str) -> Tuple[MetaInfo, str]:
         if isinstance(font_data, dict):
             for pt, color in font_data.items():
                 try:
-                    meta.font_sizes[int(pt)] = str(color)
+                    c = str(color)
+                    if c and not c.startswith("#"):
+                        c = "#" + c
+                    meta.font_sizes[int(pt)] = c
                 except (ValueError, TypeError):
                     pass
 

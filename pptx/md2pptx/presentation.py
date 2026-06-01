@@ -259,61 +259,107 @@ class PresentationBuilder:
 
     # ── Layout renderers ───────────────────────────────────────
 
+    def _add_bullet_group(self, slide, bullet_blocks: list, left, top, width,
+                          font_size, font_color, font_name):
+        """Render consecutive bullet blocks as a single text box.
+
+        Each bullet becomes a separate paragraph. Returns the total height used.
+        """
+        if not bullet_blocks:
+            return 0
+
+        # Estimate height: one line per bullet
+        n_items = len(bullet_blocks)
+        est_height = 0.28 * n_items + 0.1  # extra padding
+        box_height = Inches(est_height)
+
+        txBox = slide.shapes.add_textbox(left, top, width, box_height)
+        tf = txBox.text_frame
+        tf.word_wrap = True
+
+        for i, block in enumerate(bullet_blocks):
+            if i == 0:
+                p = tf.paragraphs[0]
+            else:
+                p = tf.add_paragraph()
+
+            p.text = f"• {block.content}"
+            p.font.size = Pt(font_size) if not isinstance(font_size, Pt) else font_size
+            p.font.color.rgb = _parse_color(font_color) if isinstance(font_color, str) else font_color
+            p.font.name = font_name
+            p.font.bold = False
+
+            # Nested bullet indentation via paragraph level
+            if block.level > 0:
+                p.level = min(block.level, 8)
+
+        return est_height
+
     def _render_single_column_blocks(self, prs_slide, slide: Slide,
-                                     top: Inches, height: Inches):
+                                     top, height):
         """Render blocks in a single column — used when no subsections exist."""
         blocks = slide.blocks
         if not blocks:
             return
 
         y = top.inches if hasattr(top, 'inches') else top / 914400
-        line_height = Pt(22)
 
-        for block in blocks:
+        i = 0
+        while i < len(blocks):
+            block = blocks[i]
+
+            # Group consecutive bullets
             if block.type == Block.BLOCK_BULLET:
-                self._add_textbox(
-                    prs_slide,
-                    Inches(Theme.MARGIN_LEFT + 0.3 * block.level), Inches(y),
-                    Inches(self.theme.content_width - 0.3 * block.level), line_height,
-                    f"• {block.content}",
-                    font_size=Pt(self.theme.body_size),
-                    font_color=self.theme.body_font_color,
-                    font_name=self.theme.body_font_name,
+                bullet_group = []
+                while i < len(blocks) and blocks[i].type == Block.BLOCK_BULLET:
+                    bullet_group.append(blocks[i])
+                    i += 1
+                h = self._add_bullet_group(
+                    prs_slide, bullet_group,
+                    Inches(Theme.MARGIN_LEFT), Inches(y),
+                    Inches(self.theme.content_width),
+                    self.theme.body_size, self.theme.body_font_color,
+                    self.theme.body_font_name,
                 )
-                y += 0.32
+                y += h
+                continue
+
             elif block.type == Block.BLOCK_TEXT:
+                text_len = len(block.content)
+                line_count = max(1, text_len // 80 + 1)
                 self._add_textbox(
                     prs_slide,
                     Inches(Theme.MARGIN_LEFT), Inches(y),
-                    Inches(self.theme.content_width), line_height,
+                    Inches(self.theme.content_width), Inches(0.32 * line_count),
                     block.content,
                     font_size=Pt(self.theme.body_size),
                     font_color=self.theme.body_font_color,
                     font_name=self.theme.body_font_name,
                 )
-                # Estimate text height — rough
-                text_len = len(block.content)
-                line_count = max(1, text_len // 80 + 1)
                 y += 0.32 * line_count
+
             elif block.type == Block.BLOCK_IMAGE:
-                img_top = y
                 self._add_image_block(prs_slide, block,
-                                      Inches(Theme.MARGIN_LEFT), Inches(img_top),
+                                      Inches(Theme.MARGIN_LEFT), Inches(y),
                                       Inches(self.theme.content_width * 0.8),
                                       Inches(3.0))
                 y += 3.2
+
             elif block.type == Block.BLOCK_CODE:
                 self._render_code_block(prs_slide, block,
                                         Inches(Theme.MARGIN_LEFT), Inches(y),
                                         Inches(self.theme.content_width),
                                         Inches(2.0))
                 y += 2.2
+
             elif block.type == Block.BLOCK_MERMAID:
                 self._render_mermaid_block(prs_slide, block,
                                            Inches(Theme.MARGIN_LEFT), Inches(y),
                                            Inches(self.theme.content_width),
                                            Inches(2.5))
                 y += 2.7
+
+            i += 1
 
     def _render_column_layout(self, prs_slide, slide: Slide,
                               top, height):
@@ -329,21 +375,50 @@ class PresentationBuilder:
         y = top.inches if hasattr(top, 'inches') else top / 914400
         ht = height.inches if hasattr(height, 'inches') else height / 914400
 
-        # Pre-subsection blocks first (full width)
+        # Pre-subsection blocks first (full width) — group consecutive bullets
         if slide.blocks:
             pre_blocks = [b for b in slide.blocks if b.type != Block.BLOCK_IMAGE]
-            for b in pre_blocks:
-                if b.type in (Block.BLOCK_BULLET, Block.BLOCK_TEXT):
+            j = 0
+            while j < len(pre_blocks):
+                b = pre_blocks[j]
+                if b.type == Block.BLOCK_BULLET:
+                    bullet_group = []
+                    while j < len(pre_blocks) and pre_blocks[j].type == Block.BLOCK_BULLET:
+                        bullet_group.append(pre_blocks[j])
+                        j += 1
+                    h = self._add_bullet_group(
+                        prs_slide, bullet_group,
+                        Inches(Theme.MARGIN_LEFT), Inches(y),
+                        Inches(self.theme.content_width),
+                        self.theme.body_size, self.theme.body_font_color,
+                        self.theme.body_font_name,
+                    )
+                    y += h
+                    continue
+                elif b.type == Block.BLOCK_TEXT:
                     self._add_textbox(
                         prs_slide,
                         Inches(Theme.MARGIN_LEFT), Inches(y),
                         Inches(self.theme.content_width), Pt(22),
-                        b.content if b.type == Block.BLOCK_TEXT else f"• {b.content}",
+                        b.content,
                         font_size=Pt(self.theme.body_size),
                         font_color=self.theme.body_font_color,
                         font_name=self.theme.body_font_name,
                     )
                     y += 0.32
+                elif b.type == Block.BLOCK_CODE:
+                    self._render_code_block(prs_slide, b,
+                                            Inches(Theme.MARGIN_LEFT), Inches(y),
+                                            Inches(self.theme.content_width),
+                                            Inches(1.5))
+                    y += 1.7
+                elif b.type == Block.BLOCK_MERMAID:
+                    self._render_mermaid_block(prs_slide, b,
+                                               Inches(Theme.MARGIN_LEFT), Inches(y),
+                                               Inches(self.theme.content_width),
+                                               Inches(2.0))
+                    y += 2.2
+                j += 1
             y += 0.2
 
         for idx, subsection in enumerate(subsections):
@@ -365,19 +440,25 @@ class PresentationBuilder:
             )
             item_y = y + 0.45
 
-            # Bullet items in this column
-            for block in subsection.blocks:
+            # Bullet items in this column — group consecutive bullets
+            sub_blocks = subsection.blocks
+            k = 0
+            while k < len(sub_blocks):
+                block = sub_blocks[k]
                 if block.type == Block.BLOCK_BULLET:
-                    self._add_textbox(
-                        prs_slide,
-                        Inches(col_left + 0.2 * block.level), Inches(item_y),
-                        Inches(col_w - 0.2 * block.level), Pt(22),
-                        f"• {block.content}",
-                        font_size=Pt(self.theme.body_size),
-                        font_color=self.theme.body_font_color,
-                        font_name=self.theme.body_font_name,
+                    bullet_group = []
+                    while k < len(sub_blocks) and sub_blocks[k].type == Block.BLOCK_BULLET:
+                        bullet_group.append(sub_blocks[k])
+                        k += 1
+                    h = self._add_bullet_group(
+                        prs_slide, bullet_group,
+                        Inches(col_left), Inches(item_y),
+                        Inches(col_w),
+                        self.theme.body_size, self.theme.body_font_color,
+                        self.theme.body_font_name,
                     )
-                    item_y += 0.28
+                    item_y += h
+                    continue
                 elif block.type == Block.BLOCK_TEXT:
                     self._add_textbox(
                         prs_slide,
@@ -395,9 +476,32 @@ class PresentationBuilder:
                                           Inches(col_w * 0.8),
                                           Inches(1.5))
                     item_y += 1.7
+                elif block.type == Block.BLOCK_CODE:
+                    self._render_code_block(prs_slide, block,
+                                            Inches(col_left), Inches(item_y),
+                                            Inches(col_w), Inches(1.5))
+                    item_y += 1.7
+                elif block.type == Block.BLOCK_MERMAID:
+                    self._render_mermaid_block(prs_slide, block,
+                                               Inches(col_left), Inches(item_y),
+                                               Inches(col_w), Inches(2.0))
+                    item_y += 2.2
+                else:
+                    # Other block types — render as text
+                    self._add_textbox(
+                        prs_slide,
+                        Inches(col_left), Inches(item_y),
+                        Inches(col_w), Pt(22),
+                        getattr(block, 'content', str(block)),
+                        font_size=Pt(self.theme.body_size),
+                        font_color=self.theme.body_font_color,
+                        font_name=self.theme.body_font_name,
+                    )
+                    item_y += 0.28
+                k += 1
 
     def _render_text_image_layout(self, prs_slide, slide: Slide,
-                                  top: Inches, height: Inches):
+                                  top, height):
         """Render 2-column layout: text (left) + image (right)."""
         total_w = self.theme.content_width
         text_w = total_w * 0.55
@@ -467,7 +571,11 @@ class PresentationBuilder:
         return txBox
 
     def _add_image_block(self, slide, block: Block, left, top, width, height):
-        """Add an image to a slide, with transformations applied."""
+        """Add an image to a slide, with transformations applied.
+
+        Uses image_attr.size_w / size_h when provided for the shape dimensions.
+        When only one dimension is given, aspect ratio is preserved.
+        """
         if not block.image_attr:
             return
 
@@ -485,8 +593,37 @@ class PresentationBuilder:
             tf.paragraphs[0].font.color.rgb = RGBColor(100, 100, 100)
             return
 
+        # Determine shape dimensions from image attributes or defaults
+        attr = block.image_attr
+        shape_w = width   # default from container
+        shape_h = height
+
+        if attr.size_w or attr.size_h:
+            from PIL import Image as PILImage
+            import io
+            # Get original image dimensions from the processed stream
+            try:
+                img_stream.seek(0)
+                pil_img = PILImage.open(img_stream)
+                orig_w, orig_h = pil_img.size
+                img_stream.seek(0)
+
+                if attr.size_w and attr.size_h:
+                    shape_w = Inches(attr.size_w / 72.0)  # px to inches (72 DPI)
+                    shape_h = Inches(attr.size_h / 72.0)
+                elif attr.size_w:
+                    ratio = attr.size_w / orig_w
+                    shape_w = Inches(attr.size_w / 72.0)
+                    shape_h = Inches((orig_h * ratio) / 72.0)
+                elif attr.size_h:
+                    ratio = attr.size_h / orig_h
+                    shape_h = Inches(attr.size_h / 72.0)
+                    shape_w = Inches((orig_w * ratio) / 72.0)
+            except Exception:
+                pass  # fall back to container dimensions
+
         # python-pptx add_picture from BytesIO
-        slide.shapes.add_picture(img_stream, left, top, width, height)
+        slide.shapes.add_picture(img_stream, left, top, shape_w, shape_h)
 
     def _render_code_block(self, prs_slide, block: Block,
                            left, top, width, height):

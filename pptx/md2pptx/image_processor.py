@@ -116,6 +116,9 @@ def make_image_attr(path: str, alt: str, attr_dict: dict) -> ImageAttr:
 def apply_transparency(img: Image.Image, transparency: int) -> Image.Image:
     """Apply alpha transparency to an image.
 
+    Uses a pre-computed LUT for efficient pixel mapping instead of lambda
+    (which is painfully slow on large images).
+
     Args:
         img: PIL Image
         transparency: 0-100 where 0=opaque, 100=fully transparent
@@ -132,9 +135,10 @@ def apply_transparency(img: Image.Image, transparency: int) -> Image.Image:
     if img.mode != "RGBA":
         img = img.convert("RGBA")
 
-    # Adjust alpha channel
+    # Pre-compute lookup table for fast pixel mapping
+    lut = [int(i * alpha_factor) for i in range(256)]
     r, g, b, a = img.split()
-    a = a.point(lambda x: int(x * alpha_factor))
+    a = a.point(lut)
     img = Image.merge("RGBA", (r, g, b, a))
     return img
 
