@@ -73,9 +73,10 @@ class PresentationBuilder:
         """Build the title slide with centered layout."""
         prs_slide = self.prs.slides.add_slide(self._blank_layout())
 
-        # Background image
+        # Background image (with transparency/size from image_attr)
         if slide.background_image:
-            self._add_background(prs_slide, slide.background_image)
+            bg_attr = getattr(slide, '_title_bg_attr', None)
+            self._add_background(prs_slide, slide.background_image, bg_attr)
 
         # Company logo (bottom-center on title slide)
         if self.theme.logo_path and os.path.isfile(self.theme.logo_path):
@@ -210,9 +211,10 @@ class PresentationBuilder:
         """Build the ending/closing slide."""
         prs_slide = self.prs.slides.add_slide(self._blank_layout())
 
-        # Background image
+        # Background image (with transparency/size from image_attr)
         if slide.background_image:
-            self._add_background(prs_slide, slide.background_image)
+            bg_attr = getattr(slide, '_title_bg_attr', None)
+            self._add_background(prs_slide, slide.background_image, bg_attr)
 
         # Company logo centered
         if self.theme.logo_path and os.path.isfile(self.theme.logo_path):
@@ -268,9 +270,9 @@ class PresentationBuilder:
         if not bullet_blocks:
             return 0
 
-        # Estimate height: one line per bullet
+        # Estimate height: one line per bullet (generous for CJK text)
         n_items = len(bullet_blocks)
-        est_height = 0.28 * n_items + 0.1  # extra padding
+        est_height = 0.33 * n_items + 0.15  # extra padding
         box_height = Inches(est_height)
 
         txBox = slide.shapes.add_textbox(left, top, width, box_height)
@@ -427,18 +429,18 @@ class PresentationBuilder:
             col_left = self.theme.column_left(col_idx, n_cols)
             col_w = self.theme.column_width(n_cols)
 
-            # Subsection heading
+            # Subsection heading (taller box to prevent overlap)
             self._add_textbox(
                 prs_slide,
                 Inches(col_left), Inches(y),
-                Inches(col_w), Inches(0.4),
+                Inches(col_w), Inches(0.45),
                 subsection.heading,
                 font_size=Pt(self.theme.subsection_font_size),
                 font_color=self.theme.subsection_color(),
                 bold=True,
                 font_name=self.theme.heading_font_name,
             )
-            item_y = y + 0.45
+            item_y = y + 0.55
 
             # Bullet items in this column — group consecutive bullets
             sub_blocks = subsection.blocks
@@ -689,13 +691,12 @@ class PresentationBuilder:
         p2.font.color.rgb = RGBColor(80, 80, 80)
         p2.alignment = PP_ALIGN.CENTER
 
-    def _add_background(self, slide, image_path: str):
-        """Add a full-slide background image."""
-        img_stream = process_image(
-            type('ImageAttr', (), {'path': image_path, 'transparency': None,
-                                    'size_w': None, 'size_h': None})(),
-            self.base_dir
-        )
+    def _add_background(self, slide, image_path: str, image_attr=None):
+        """Add a full-slide background image with optional transparency/size."""
+        if image_attr is None:
+            from models import ImageAttr
+            image_attr = ImageAttr(path=image_path, transparency=None, size_w=None, size_h=None)
+        img_stream = process_image(image_attr, self.base_dir)
         if img_stream:
             slide.shapes.add_picture(
                 img_stream,

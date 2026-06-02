@@ -118,11 +118,13 @@ def _build_title_slide(meta: MetaInfo, h1_blocks: List[Block]) -> Slide:
         slide.title = "Untitled"
 
     # Find title background image (alt="First" or first image in H1 area)
+    # Store the full image_attr so transparency/size are preserved
     for b in h1_blocks:
         if b.type == Block.BLOCK_IMAGE:
             img_alt = (b.image_attr.alt if b.image_attr else "").lower()
             if img_alt in ("first", "title-bg", "titlebg") or not slide.background_image:
                 slide.background_image = b.content
+                slide._title_bg_attr = b.image_attr  # preserve transparency/size
                 break
 
     return slide
