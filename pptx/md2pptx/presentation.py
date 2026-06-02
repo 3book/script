@@ -120,7 +120,7 @@ class PresentationBuilder:
                 font_name=self.theme.body_font_name,
                 alignment=PP_ALIGN.CENTER,
             )
-            y_offset += Inches(0.45)
+            y_offset += Inches(0.55)
 
         # Date
         if self.meta.date:
@@ -135,7 +135,7 @@ class PresentationBuilder:
                 font_name=self.theme.body_font_name,
                 alignment=PP_ALIGN.CENTER,
             )
-            y_offset += Inches(0.45)
+            y_offset += Inches(0.55)
 
         # Company name
         if self.meta.company_name:

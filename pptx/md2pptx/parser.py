@@ -136,7 +136,7 @@ def parse_yaml_frontmatter(text: str) -> Tuple[MetaInfo, str]:
 
 
 # Regex patterns
-RE_H1 = re.compile(r"^#\s+(.*)")
+RE_H1 = re.compile(r"^#(?:\s+(.*))?$")
 RE_H2 = re.compile(r"^##\s+(.*)")
 RE_H3 = re.compile(r"^###\s+(.*)")
 RE_BULLET = re.compile(r"^(\s*)[-*]\s+(.*)")
@@ -235,9 +235,10 @@ def parse_markdown_body(text: str) -> Tuple[List[Block], List[Section]]:
         h1_match = RE_H1.match(line)
         if h1_match:
             state = STATE_H1
-            content = h1_match.group(1).strip()
+            content = (h1_match.group(1) or "").strip()
             if content:
                 h1_blocks.append(Block(type=Block.BLOCK_TEXT, content=content))
+            # bare '#' with no text → skip, don't create a block
             i += 1
             continue
 
