@@ -111,13 +111,17 @@ def main():
         if not input_path.suffix.lower() in (".md", ".markdown"):
             print(f"Warning: '{input_path}' does not appear to be a markdown file")
 
-        output = Path(args.output) if args.output else input_path.with_suffix(".pptx")
+        if args.output:
+            output = Path(args.output)
+        else:
+            # Default: save to current working directory
+            output = Path.cwd() / input_path.with_suffix(".pptx").name
         rc = process_file(input_path, output, options)
         sys.exit(rc)
 
     # ── Directory batch ──────────────────────────────────────
     elif input_path.is_dir():
-        output_dir = Path(args.output) if args.output else input_path / "output"
+        output_dir = Path(args.output) if args.output else Path.cwd() / "output"
         output_dir.mkdir(parents=True, exist_ok=True)
 
         pattern = "**/*.md" if args.recursive else "*.md"

@@ -12,24 +12,23 @@
 
 ```
 pptx/
-├── md2pptx/                    # 转换脚本（单层目录）
-│   ├── convert.py              # CLI 入口（单文件 + 批量）
-│   ├── models.py               # 数据模型（MetaInfo, Block, Section, Slide）
-│   ├── parser.py               # YAML 前端 + 状态机 Markdown 解析器
-│   ├── theme.py                # 主题管理器（配色/字体/Logo）
-│   ├── image_processor.py      # 图片属性解析 + Pillow 变换
-│   ├── slide_builder.py        # 布局检测（1/2/3/4 列、图文混排）
-│   ├── presentation.py         # PPTX 生成器（python-pptx 渲染）
+├── md2pptx.sh                  # 团队入口脚本（可执行，从任意目录调用）
+├── md2pptx/                    # 转换库（单层目录）
+│   ├── convert.py              # CLI 实现（单文件 + 批量）
+│   ├── models.py               # 数据模型
+│   ├── parser.py               # YAML + Markdown 解析器
+│   ├── theme.py                # 主题管理器
+│   ├── image_processor.py      # 图片处理
+│   ├── slide_builder.py        # 布局检测
+│   ├── presentation.py         # PPTX 生成器
 │   ├── template.md             # Markdown 模板示例
-│   └── requirements.txt        # 依赖
+│   └── requirements.txt
 ├── ex/                         # 测试数据
-│   ├── microsoft.md            # Microsoft 示例（8 slides）
-│   ├── mercedes-benz.md        # Mercedes-Benz 示例（8 slides）
-│   ├── assets/                 # 测试图片素材
-│   └── output/                 # 生成 PPTX
-├── assets/                     # Boeing 品牌素材
-├── output/                     # 输出目录
-├── PLAN.md                     # 实现计划
+│   ├── microsoft.md
+│   ├── mercedes-benz.md
+│   └── assets/                 # md 同级 assets 目录
+├── assets/                     # Boeing 品牌素材（示例）
+├── PLAN.md
 └── SUMMARY.md                  # 本文件
 ```
 
@@ -135,18 +134,32 @@ output: pptx
 ## CLI 用法
 
 ```bash
-# 单文件
-python md2pptx/convert.py input.md -o output.pptx
+# === 团队使用（推荐） ===
+# 将工具目录加入 PATH 或直接调用入口脚本
 
-# 批量目录
-python md2pptx/convert.py ./docs/ -o ./output/
+# 单文件 — 输出到当前目录
+./md2pptx.sh /path/to/report.md                    # → ./report.pptx
+
+# 指定输出路径
+./md2pptx.sh /path/to/report.md -o /path/to/out.pptx
+
+# 批量处理目录
+./md2pptx.sh /path/to/docs/ -o ./output/
 
 # 递归批量
-python md2pptx/convert.py ./docs/ -o ./output/ --recursive
+./md2pptx.sh /path/to/docs/ -o ./output/ -r
 
 # 无页眉页脚
-python md2pptx/convert.py input.md -o output.pptx --no-header --no-footer
+./md2pptx.sh report.md --no-header --no-footer
+
+# === 直接调用 Python ===
+python md2pptx/convert.py /path/to/report.md
 ```
+
+**关键约定:**
+- 输出默认保存到**当前工作目录**（`pwd`）
+- 图片路径相对于 **Markdown 文件所在目录** 解析
+- 推荐 assets 与 md 文件放在同一目录下：`报告.md` + `assets/图片.jpg`
 
 ---
 
