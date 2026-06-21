@@ -1,0 +1,15 @@
+# =========================================================================
+# Verible Formatter Flags Configuration (Fixed & Validated Syntax)
+# =========================================================================
+
+# --- 1. Indentation Rules ---
+--indentation_spaces=4
+--wrap_spaces=4
+
+# --- 2. Code Line Width Constraints ---
+--column_limit=100
+--over_column_limit_penalty=100
+
+# --- 3. Vertical Column Alignments ---
+--assignment_statement_alignment=align
+--port_declarations_ali

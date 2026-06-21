@@ -1,0 +1,13 @@
+{
+    "unwantedRecommendations": [],
+    "recommendations": [
+        "Hudson-River-Trading.vscode-slang",
+        "CHIPSAlliance.verible",
+        "charliermarsh.ruff",
+        "ms-python.python",
+        "esbenp.prettier-vscode",
+        "davidanson.vscode-markdownlint",
+        "timonwong.shellcheck",
+        "ms-vscode.makefile-tools"
+    ]
+}

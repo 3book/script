@@ -1,0 +1,9 @@
+--column_limit=120
+--indentation_spaces=4
+--wrap_spaces=4
+--try_wrap_long_lines=true
+--wrap_end_else_clauses=true
+--formal_parameters_indentation=wrap
+--named_parameter_indentation=wrap
+--named_port_indentation=wrap
+--port_declarations_indentation=wrap

@@ -1,0 +1,107 @@
+/* Please visit the URL below for more information: */
+/*   https://shd101wyy.github.io/markdown-preview-enhanced/#/customize-css */
+
+// .markdown-preview.markdown-preview {
+//   // modify your style here
+//   // eg: background-color: blue;
+// }
+
+.markdown-preview.markdown-preview {
+  /* your settings */
+
+  // /* title numering */
+  counter-reset: h1;
+
+  h1 {
+    counter-reset: h2;
+  }
+
+  h2 {
+    counter-reset: h3;
+  }
+
+  h3 {
+    counter-reset: h4;
+  }
+  h4 {
+    counter-reset: h5;
+  }
+  h5 {
+    counter-reset: h6;
+  }
+
+  // h1:before {
+  //   counter-increment: h1;
+  //   content: counter(h1) ".";
+  // }
+
+  h2:before {
+    counter-increment: h2;
+    content:  counter(h2) ". ";
+  }
+
+  h3:before {
+    counter-increment: h3;
+    content: counter(h2) "." counter(h3) ". ";
+  }
+  h4:before {
+    counter-increment: h4;
+    content: counter(h2) "." counter(h3) ". " counter(h4) ". ";
+  }
+  h5:before {
+    counter-increment: h5;
+    content: counter(h2) "." counter(h3) ". " counter(h4) ". " counter(h5) ". ";
+  }
+  h6:before {
+    counter-increment: h6;
+    content: counter(h2) "." counter(h3) ". " counter(h4) ". " counter(h5) ". "counter(h6) ". ";
+  }
+
+  // 表格行颜色交替
+  // tr:th {color:green}
+  // tr:nth-child(odd) {background:snow}
+  tr:nth-child(even) {background:silver}
+  // 在这里编写你的样式
+  // 例如：
+  //  color: blue;          // 改变字体颜色
+  //  font-size: 14px;      // 改变字体大小
+  // 自定义 pdf 导出样式
+  @media print {
+  }
+  // 自定义 prince pdf 导出样式
+  &.prince {
+  }
+  // 自定义 phantomjs png/jpeg 导出样式
+  &.phantomjs-image {
+  }
+  // 自定义 phantomjs pdf 导出样式
+  &.phantomjs-pdf {
+  }
+  // 自定义 presentation 样式
+  .reveal .slides {
+    // 修改所有幻灯片
+  }
+  // 自定义 presentation 样式
+  .slides > section:nth-child(1) {
+    // 修改 `第 1 个幻灯片`
+  }
+}
+.md-sidebar-toc.md-sidebar-toc {
+  // 边栏目录样式
+  ol li a {
+    color: black;
+  }
+  li {
+    display: block;
+  }
+  ol {
+    counter-reset: item;
+  }
+  // li ol li {
+  //   display: block;
+  // }
+  ol li:before {
+    content: counters(item, ".") " ";
+    counter-increment: item;
+  }
+}

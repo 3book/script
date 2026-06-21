@@ -1,0 +1,85 @@
+{
+    "editor.tabSize": 4,
+    "editor.rulers": [
+        100
+    ],
+    "editor.renderWhitespace": "boundary",
+    "editor.formatOnSave": true,
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true,
+    "files.eol": "\n",
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.pytest_cache/**": true,
+        "**/hardware_logs/**": true,
+        "**/*.vcd": true,
+        "**/*.fsdb": true
+    },
+    "files.associations": {
+        "*.mk": "makefile",
+        "*.v": "verilog",
+        "*.sv": "systemverilog",
+        "*.svh": "systemverilog",
+        "*.vh": "verilog",
+        "*.vhd": "vhdl",
+        "*.vhdl": "vhdl",
+        "*.sdc": "tcl",
+        "*.xdc": "tcl",
+        "*.qsf": "tcl"
+    },
+
+    // ── Verilog / SystemVerilog ────────────────────────────────────
+    "[verilog]": {
+        "editor.defaultFormatter": "chipsalliance.verible",
+        "editor.formatOnSave": false
+    },
+    "[systemverilog]": {
+        "editor.defaultFormatter": "chipsalliance.verible",
+        "editor.formatOnSave": false
+    },
+
+    // ── Slang: LSP (code navigation, linting) ─────────────────────
+    "slang.path": "/usr/local/bin/slang-server",
+    "slang.executablePath": "/usr/local/bin/slang",
+    "slang.arguments": [
+        "--lint-only",
+        "-W", "shadow",
+        "-W", "unused",
+        "--allow-toplevel-iface-ports",
+        "-I", "./src/rtl",
+        "--single-unit"
+    ],
+
+    // ── Verible: formatter (LSP disabled, format on-demand) ───────
+    "verible.enable": false,
+    "verible.path": "/usr/local/bin/verible-verilog-ls",
+    "verible.arguments": [
+        "--flagfile",
+        ".vscode/.verible_format.flags"
+    ],
+
+    // ── Markdown ───────────────────────────────────────────────────
+    "[markdown]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true,
+        "editor.wordWrap": "on"
+    },
+
+    // ── Tcl ────────────────────────────────────────────────────────
+    "[tcl]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true
+    },
+
+    // ── Makefile ───────────────────────────────────────────────────
+    "[makefile]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": false
+    },
+
+    // ── Shell ──────────────────────────────────────────────────────
+    "[shellscript]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true
+    }
+}

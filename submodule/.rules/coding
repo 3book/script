@@ -1,0 +1,514 @@
+---
+toc:
+  depth_from: 2
+  depth_to: 4
+  ordered: true
+html:
+  embed_local_images: true
+  embed_svg: true
+  toc: true
+  offline: true
+export_on_save:
+  cdn: false
+  html: true
+---
+
+@import "./assets/doc_style.less"
+
+# FPGA 编码规范
+
+**适用语言：Verilog/SystemVerilog**
+**核心原则：可靠性 > 性能 > 可读性 > 简洁性**
+
+## 本文档格式说明
+
+| 格式     | 描述                         |
+| -------- | ---------------------------- |
+| **粗体** | 规范约束字                   |
+| _斜体_   | 语法关键字或fpga项目专用表达 |
+
+## 文件规则
+
+### 文件组织
+
+> - 可综合文件 **必须** 放在工程目录下 _./src/rtl_ 目录
+> - 可综合文件 **必须** 只含一个 _module_
+> - _rtl_ 目录 **禁止** 任何非项目顶层文件
+> - _define.vh_ **必须** 放在 _rtl_ 目录
+> - 单功能特性的多个文件 **必须** 放在同一子目录
+
+### 文件命名
+
+> - 文件命名 **必须** 和 _module_ 名一致
+> - 文件命名 **必须** 使用小写字母、数字和 \_ 的组合
+> - 文件命名 **必须** 以字母开头
+> - 文件命名 **禁止** 以 \_\_\_ 结尾
+> - 文件命名 **禁止** 出现连续 \_\_\_
+> - 文件命名 **禁止** 超过 32 个字符
+> - 文件命名 **推荐** 使用含义明确、反映功能特性单词命名
+> - 文件命名 **推荐** 使用缩写形式 (参见)[#常用单词缩写对照表]
+
+## 一般规则
+
+### 空白符规则
+
+> 规范对象包括 _space[\s] tab newline_
+>
+> - 文件首位 **禁止** 空白符
+> - 代码中 **禁止** 使用 _tab_
+> - 段落间 **推荐** 使用 _newline_
+> - 行尾 **禁止** _space_
+> - **推荐** 相邻赋值符号、双目运算符两边要有 _space_
+> - **推荐** 单目运算符和操作数之间可以没有 _space_
+> - **推荐** _{} () []_ 等符号内侧左右不需要 _space_
+
+```verilog
+// rule style
+a <= b;
+c <= a + b;
+if (a == b) begin
+a <= ~a & c;
+// forbidden style
+a<=b;
+c<=a+b;
+if(a==b)begin
+a<=~a&c;
+```
+
+### 对齐和缩进规则
+
+> 规范对象特指相邻行的局部列
+>
+> - 对齐缩进时 **必须** 使用空格 "可在编辑器中设置 Tab 键为 2/4 个字符宽度"
+> - 嵌套语句尤其是 _if...else_ 语句，**必须** 严格的逐层缩进对齐
+> - **推荐** 相邻行的同种关键字对齐
+> - **推荐** 相邻行的 _{} () <= =_ 等符号对齐
+> - **推荐** 相邻行的运算符必须对齐
+> - **推荐** 相邻行的 _, ;_ 对齐
+> - 行长度 **必须** 在100个字符以内
+> - 续行符 _\\_ **推荐** 置于局部语义结束后或 _( {_ 有闭合对应的关键字后
+
+```verilog {.line-numbers}
+input  [ 3:0] a_cnt ,
+output [15:0] result,
+
+wire [ 3:0] b_cnt ;
+wire [15:0] a_data;
+
+assign result_0   = (sel0  && sel1 ) ?   a_cnt :   b_cnt;
+assign result_000 = (sel00 && sel11) ? ccc_cnt : ddd_cnt;
+```
+
+### 数值规则
+
+> 规范对象特指形如[size]'[base][value]
+>
+> - size **必须** 使用 正整数
+> - base **推荐** 使用 h/b
+> - value **必须** 每隔 4 字符 用下划线 \_\_\_ 隔开
+> - 赋值语句中的size **必须** 与变量位宽一致
+> - 大位宽数值 **推荐** 使用多行 32/64 bit
+
+```verilog
+// rule style
+data_in <= 32’h1234_4321;
+data_in <= {
+    32’h1111_4321,
+    32’h2222_4321
+    32’h3333_4321,
+    32’h4444_4321
+};
+
+// forbidden style
+data_in <= 32’h12344321;
+data_in <= 128’h1111_4321_2222_4321_h3333_4321_h4444_4321;
+```
+
+### 操作符规则
+
+> 规范对象包括算术运算、bit运算、逻辑运算、关系、条件等
+
+> - 操作符优先级 **必须** 使用 _()_ 显式指定
+> - 双目操作符 两边位宽 **必须** 一致
+
+```verilog
+// forbidden style
+if (sel == 1'b1 && cal_en == 1'b1) begin  // ==, && 优先级不同
+
+result <= a + b >> 2; // +, >> 优先级不同
+
+// rule style
+if ((sel == 1'b1) && (cal_en == 1'b1)) begin
+
+result <= a + (b >> 2);
+
+resule <= a + b - c; // +, -优先级相同
+```
+
+### 命名规则
+
+> 规范对象包含端口、变量、函数、参数、宏定义等标识符
+>
+> - 标识符命名 **禁止** 使用语法关键字
+> - 标识符命名 **允许** 含有语法关键字
+> - 标识符命名 **必须** 以字母开头
+> - 标识符命名 **禁止** 以\_结尾
+> - 标识符命名 **禁止** 出现连续\_
+> - 标识符命名 **禁止** 超过 32 个字符
+> - 标识符命名 **推荐** 使用含义明确、反映对象特征、作用和性质的单词命名
+> - 标识符命名 **推荐** 使用缩写形式 (参见)[#常用单词缩写对照表]
+> - 变量、函数 命名 **必须** 使用 \_a-z 0-9 \__ 的组合 (regExp=[a-z]a-z0-9_]\*)
+> - 参数 命名 **必须** 使用 \_A-Z 0-9 \__ 的组合 (regExp=[A-Z]a-z0-9_]\*)
+> - 宏定义 命名 **允许** 使用\_a-z A-Z 0-9 \__ (regExp=[a-z]a-zA-Z0-9_]\*)
+
+### 注释规则
+
+> - **必须** 使用以“//”开头的单行注释，避免使用“/_ … _/”开头的多行注释
+> - **推荐** 注释应解释为什么这样设计，而不是代码做了什么
+> - **推荐** 代码本身应做到自注释
+
+### 其他规则
+
+> - 综合代码 **禁止** 使用 initial、wait.、fork_join、while
+> - 赋值语句 **禁止** 使用 _\* / %_ 操作符
+
+## 编码规则
+
+### 端口声明
+
+> - 每行 **禁止** 声明多个端口
+> - 输入端口声明 **必须** 是 wire 型
+> - 输出端口声明 **推荐** wire 型，代码内部使用reg型
+> - **推荐** 先定义时钟与复位端口，再定义其他端口
+> - **推荐** 同一个时钟域的时钟和复位端口先后定义
+> - **推荐** 可综合代码中使用显式定义，避免使用interface
+> - **允许** 公认且广泛使用的接口 采用interface方式
+
+### 参数声明
+
+> - 每行 **禁止** 声明多个参数
+> - _module_ 内部参数声明 **必须** 使用**localparam**
+> - 参数声明 **必须** 显式定义类型和位宽
+
+### 变量声明
+
+<!-- todo logic 替代 reg wire -->
+
+> - 每行 **禁止** 声明多个变量
+> - 非 1 bit变量声明 **必须** 定义类型和位宽
+> - reg型变量声明时 **推荐** 赋初值
+> - 打拍reg变量 **推荐** 使用 _[1-9][p d r]_ 后缀 （表达preview delay register含义）
+> - wire重组变量 **推荐** 使用 _t_ 后缀 （表达temp含义）
+> - 1 bit 低有效变量名 **必须** 以 _\_n_ 为后缀
+
+```verilog {.line-numbers}
+always @(posedge clk)begin
+  a_1d <= a;
+  a_2d <= a_1d;
+end
+assign b_t = {b[0],b[1+:2],b[1]};
+```
+
+### 组合逻辑
+
+> - 组合逻辑 **必须** 使用 _=_ 赋值
+> - 变量赋值 **推荐** 每行或每always块仅实现一个
+> - 综合代码 **禁止** 填加 _#_ 延迟
+
+```verilog
+//rule style
+asign a = b;
+asign c = d;
+//forbidden style
+asign a = b; asign c = d;
+```
+
+> - 组合逻辑右侧 **禁止** 包含左侧变量
+
+```Verilog
+// forbidden style
+wire tmp;
+assign tmp = ~(tmp && vld_in);
+```
+
+> - always块中的组合逻辑 **必须** 显式使用敏感变量，**禁止** 使用 _\*_
+> - **推荐** 使用always_comb 块
+
+```verilog
+//rule style
+ always @(a,b,c) begin
+    cnt = a + b + c
+ end
+//forbidden style
+ always @(\*) begin
+    cnt = a + b + c
+ end
+```
+
+### 时序逻辑
+
+> - 时序逻辑 **必须** 使用 <= 赋值
+> - 变量赋值 **推荐** 每always块仅实现一个
+> - **推荐** 使用always_ff 块
+> - **禁止** 使用negedge
+
+```verilog
+//forbidden style
+always @(posedge clk) begin
+    a <= b;
+end
+always @(negedge clk) begin
+    c <= d;
+end
+```
+
+### module 实例化
+
+> - 端口声明与module间 **必须** 缩进
+> - 实例化名 **必须** 是moduleName_inst[0-9]*
+
+## 设计规则
+
+### 复位策略
+
+> - 控制通路 **必须** 复位
+> - 数据通路 **推荐** 不复位
+> - **推荐** 同步复位同步释放
+
+
+```verilog {.line-numbers}
+reg [3:0] cnt=4'b0;
+reg       vld=1'b0;
+reg [7:0] dat=8'b0;
+always @(posedge clk) begin
+    if(rst==1'b1)begin
+        cnt <= 4’b0;
+    end else begin
+        cnt <= cnt + 4’b1;
+    end
+end
+always @(posedge clk) begin
+    if (cnt==4'h8) begin
+        vld <= 1'b1;
+    end else begin
+        vld <= 1'b0;
+    end
+end
+always @(posedge clk) begin
+    if (vld==1'b1) begin
+        dat <= {dat[0+:7],in};
+    end else begin
+        dat <= dat ;
+    end
+```
+
+### 条件和分支
+
+> - 条件表达式每行 **禁止** 超过 2 个
+
+```verilog
+// forbidden style
+if ((a==1'b1) || (b > c) || (d==1'b0)) begin
+
+// rule style
+if ((a==1'b1) ||
+    (b > c  ) ||
+    (d==1'b0)) begin
+
+//rule style
+wire h = ((a==1'b1) || (b > c) || (d==1'b0))
+if (h==1'b1) begin
+```
+
+> - 分支嵌套 **禁止** 超过 3 层
+
+### case 语句
+
+> - case 语句 **必须** 完备、互斥
+> - case 语句 **必须** 加缺省项（default）
+> - 可综合代码中 **禁止** 使用 casex,casez 语句
+
+```verilog
+// rule style
+case (condition)
+    2'b00   : result = a;
+    2'b01   : result = b;
+    2'b10   : result = c;
+    default : result = d;
+endcase
+
+case (condition)
+    2'b00   : result = a;
+    2'b01   : result = b;
+    default : result = d;
+endcase
+
+// forbidden style
+case (condition)
+    2'b00 : result = a;
+    2'b01 : result = b;
+    2'b10 : result = c;
+    2'b11 : result = d;
+endcase
+```
+
+## 有限状态机（FSM）规范
+
+> - 状态机 **必须** 使用三段式设计
+
+```verilog{.line-numbers}
+// 状态编码（独热码优先）
+parameter s0 = 3'b001;
+parameter s1 = 3'b010;
+parameter s2 = 3'b100;
+//定义状态寄存器
+reg [2:0] curr_state;
+reg [2:0] next_state   ;
+
+always @(posedge clk) begin
+    if (rst==1'b1) begin
+        curr_state <= s0;
+    end else begin
+        curr_state <= next_state;
+    end
+end
+
+always_comb begin                // 2.状态转移
+    case (curr_state)
+        s0      : cond0 ? (next_state = s1) : (next_state = s0);
+        s1      : cond1 ? (next_state = s2) : (next_state = s1);
+        s2      : cond2 ? (next_state = s0) : (next_state = s2);
+        default : next_state = s0;
+    endcase
+end
+
+always @(posedge clk) begin
+    if (rst==1'b1) begin
+        result <= s0;
+    end else begin
+        curr_state <= next_state;
+    end
+end
+assign result = (curr_state == s1) ? 8'd1 : 8'd0;  // 3.输出逻辑
+```
+
+### 跨时钟域（CDC）处理规则
+
+| **场景**       | 正确方案           | 风险方案   |
+| -------------- | ------------------ | ---------- |
+| 单比特信号传输 | 双级同步器         | 直接连接   |
+| 多比特数据传输 | 异步 FIFO/握手协议 | 同步器阵列 |
+| 脉冲传输       | 脉冲展宽+同步器    | 单级同步   |
+
+```verilog
+// 单比特CDC示例（两级同步）
+reg [1:0] sync_chain;
+always_ff @(posedge dest_clk) begin
+    sync_chain <= {sync_chain[0], src_pulse};
+end
+assign dest_pulse = sync_chain[1];
+```
+
+## 附录
+
+### 示例
+
+```verilog {.line-numbers}
+/********************************************************************************
+// @project       common build block
+// @filename      reg_rw.v
+// @author        3book
+// @description   register can be read & write
+// @copyright     Copyright (c)
+// @created       2022-01-04T15:27:42.330Z+08:00
+// @last-modified 2026-06-14T02:02:55.752Z+08:00
+*******************************************************************************/
+`timescale 1ns / 100ps
+module reg_rw #(
+    parameter integer AW = 32,
+    parameter integer DW = 32,
+    parameter bit [AW-1:0] RA = {AW{1'b0}},  //register Address
+    parameter bit [DW-1:0] DV = {DW{1'b0}}  //default value
+) (
+    input           clk,
+    input           rst,
+    output [DW-1:0] oreg,
+    output          hit,
+    input  [AW-1:0] addr,
+    input  [DW-1:0] wdat,
+    input           wren
+);
+  reg [DW-1:0] reg_r = DV;
+  reg          hit_t = 1'b0;
+  always @(posedge clk) begin
+    if ((addr == RA) && (wren == 1'b1)) begin
+      hit_t <= 1'b1;
+    end else begin
+      hit_t <= 1'b0;
+    end
+  end
+  always @(posedge clk) begin
+    if (rst == 1'b1) begin
+      reg_r <= DV;
+    end else if ((addr == RA) && (wren == 1'b1)) begin
+      reg_r <= wdat;
+    end else begin
+      reg_r <= t_reg;
+    end
+  end
+  assign hit  = hit_t;
+  assign oreg = reg_r;
+endmodule
+```
+
+### 常用单词缩写对应表
+
+| 全称         | 缩写  | 中文含义 |
+| ------------ | ----- | -------- |
+| clock        | clk   | 时钟     |
+| reset        | rst   | 复位     |
+| request      | req   | 请求     |
+| acknowledge  | ack   | 应答     |
+| address      | addr  | 地址     |
+| addition     | add   | 加       |
+| subtract     | sub   | 减       |
+| arbiter      | arb   | 仲裁     |
+| block        | blk   | 块       |
+| buffer       | buf   | 缓存     |
+| channel      | ch    | 通道     |
+| check        | chk   | 校验     |
+| clear        | clr   | 清除     |
+| command      | cmd   | 命令     |
+| configure    | cfg   | 配置     |
+| control      | ctrl  | 控制     |
+| count        | cnt   | 计数     |
+| data in      | din   | 输入数据 |
+| data out     | dout  | 输出数据 |
+| decode       | dc    | 译码     |
+| different    | diff  | 不同的   |
+| delay        | dly   | 延迟     |
+| disable      | dis   | 不使能   |
+| error        | err   | 错误     |
+| enable       | en    | 使能     |
+| frame        | frm   | 帧       |
+| generate     | gen   | 生成     |
+| global       | glb   | 全局的   |
+| increase     | inc   | 加 1     |
+| decrease     | dec   | 减 1     |
+| input        | in    | 输入     |
+| output       | out   | 输出     |
+| length       | len   | 长       |
+| memory       | mem   | 存储器   |
+| number       | num   | 数字     |
+| packet       | pkt   | 包       |
+| priority     | pri   | 优先级   |
+| pointer      | ptr   | 指针     |
+| read enable  | rden  | 读使能   |
+| write enable | wren  | 写使能   |
+| receive      | rx    | 接收     |
+| transmit     | tx    | 发送     |
+| segment      | seg   | 节，段   |
+| temporary    | tmp   | 临时     |
+| valid        | vld   | 有效     |
+| asynchronous | async | 异步     |
+| synchronous  | sync  | 同步     |
